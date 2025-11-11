@@ -1,0 +1,8 @@
+mini_data_platform:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../warehouse/data.duckdb
+      schema: main
+      threads: 4

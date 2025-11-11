@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+
+# Airflow
+airflow/airflow.db
+airflow/airflow.db-shm
+airflow/airflow.db-wal
+airflow/logs/
+airflow/plugins/
+airflow/*.pid
+airflow/*.err
+airflow/*.log
+
+# DuckDB - WAL files only (keep the main database)
+warehouse/*.duckdb.wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# uv
+.python-version
+uv.lock
+
+# Evidence
+evidence/node_modules/
+evidence/build/
+evidence/.evidence/template/
+evidence/.evidence/customization/
+# Note: Evidence uses relative path to main warehouse, no local database needed
+
+# dbt
+dbt_project/target/
+dbt_project/logs/
+dbt_project/.user.yml

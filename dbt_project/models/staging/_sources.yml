@@ -1,0 +1,111 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw data loaded from various source systems
+    schema: raw
+    tables:
+      - name: products
+        description: Product catalog from e-commerce database
+        columns:
+          - name: product_id
+            description: Primary key
+            tests:
+              - unique
+              - not_null
+          - name: product_name
+          - name: brand
+          - name: category
+          - name: price
+          - name: cost
+          - name: stock_quantity
+          - name: created_at
+          - name: updated_at
+
+      - name: users
+        description: Customer information from user database
+        columns:
+          - name: user_id
+            description: Primary key
+            tests:
+              - unique
+              - not_null
+          - name: email
+          - name: first_name
+          - name: last_name
+          - name: city
+          - name: state
+          - name: age
+          - name: customer_segment
+          - name: created_at
+          - name: last_login
+
+      - name: transactions
+        description: Sales transaction line items
+        columns:
+          - name: transaction_id
+            description: Order identifier (multiple line items per transaction)
+          - name: user_id
+            description: Foreign key to users
+            tests:
+              - relationships:
+                  to: source('raw', 'users')
+                  field: user_id
+          - name: product_id
+            description: Foreign key to products
+            tests:
+              - relationships:
+                  to: source('raw', 'products')
+                  field: product_id
+          - name: transaction_date
+          - name: quantity
+          - name: price
+          - name: subtotal
+          - name: tax
+          - name: shipping
+          - name: discount
+          - name: discount_code
+          - name: total
+          - name: payment_method
+          - name: status
+          - name: campaign_id
+          - name: created_at
+
+      - name: campaigns
+        description: Marketing campaign data from Salesforce
+        columns:
+          - name: campaign_id
+            description: Primary key
+            tests:
+              - unique
+              - not_null
+          - name: campaign_name
+          - name: campaign_type
+          - name: platform
+          - name: product_id
+            description: Product being promoted
+          - name: start_date
+          - name: end_date
+          - name: budget
+          - name: actual_spend
+          - name: impressions
+          - name: clicks
+          - name: created_at
+
+      - name: pageviews
+        description: Web analytics events
+        columns:
+          - name: event_id
+            description: Primary key
+            tests:
+              - unique
+              - not_null
+          - name: event_time
+          - name: user_id
+          - name: session_id
+          - name: page_type
+          - name: product_id
+          - name: campaign_id
+          - name: device
+          - name: browser
+          - name: session_duration_seconds
