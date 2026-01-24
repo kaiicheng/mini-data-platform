@@ -1,57 +1,3 @@
-# Mini Data Platform – CLI Agent
-
-## Overview
-
-This repository adds a small, SQL-first **Python CLI agent** on top of the existing Mini Data Platform. The CLI is designed for **ad-hoc analytical questions** directly against the DuckDB warehouse, without introducing additional abstraction layers or LLM dependencies.
-
-The implementation focuses on inferring data semantics from schemas and exposing analysis through a transparent, debuggable interface.
-
----
-
-## CLI Usage
-
-```bash
-# Revenue over a time range
-python -m cli.main sales-cmd --start YYYY-MM-DD --end YYYY-MM-DD
-
-# Top-selling products (line-item grain)
-python -m cli.main top-products-cmd --n 5
-
-# Frequently co-purchased product pairs
-python -m cli.main product-pairs-cmd --top 10
-```
-
-Supported analyses:
-
-* Revenue / sales over time
-* Top product performance (line-item quantities)
-* Market-basket style product pair analysis
-
----
-
-## Design Notes
-
-* **DuckDB** as the analytical warehouse
-* **SQL-first queries** for clarity and correctness
-* **Explicit grain handling** (order-level vs line-item-level)
-* Clean separation between query logic, database access, and CLI interface
-
-For local validation, a minimal seeded dataset was used to sanity-check query logic. The production warehouse is assumed to be built via the existing Airflow/dbt pipeline in this repository.
-
----
-
-## Future Extensions
-
-* Natural-language → query routing
-* Time-series anomaly detection
-* Customer lifetime value (LTV) analysis
-* dbt metadata–aware querying
-
----
-
-> The sections below retain the original repository README for full context on the data pipeline and dashboards.
-
-
 # Mini Data Platform
 
 If you have an applied AI interview at Astronomer, we'll ask you to build a small project around this repo. You can also proactively do this as part of your application to speed up the process.
@@ -237,3 +183,192 @@ uv run python dags/build_evidence.py
 cd evidence
 npm run build
 ```
+
+## Local Setup Notes (WSL + Airflow + DuckDB)
+
+### What this project does (1‑minute overview)
+
+This repo is a **local, reproducible data platform demo**:
+
+1. **Generate synthetic source data** (CSV files)
+2. **Ingest data with Airflow DAGs** into DuckDB
+3. **Transform data with dbt** (staging → marts)
+4. **Query analytics tables** (`marts.fct_orders`)
+5. **Visualize results with Evidence**
+
+There are **no external services** (no Postgres, no Snowflake, no cloud). Everything runs locally.
+
+---
+
+### Important concepts (before debugging)
+
+* **Airflow = workflow DSL, not a daemon**
+
+  * DAGs describe *what should happen*
+  * They do **not** automatically run unless scheduled or triggered
+  * `./setup.sh` uses `airflow dags test` → runs DAGs **once** for validation
+
+* **DuckDB = embedded warehouse**
+
+  * Data is stored in `warehouse/data.duckdb`
+  * No server, no credentials
+
+* **dbt = transformations only**
+
+  * Reads from DuckDB
+  * Builds `staging` views and `marts` tables
+
+---
+
+### Common setup gotchas (based on real issues)
+
+#### 1. WSL vs Windows confusion
+
+* Commands must run **inside WSL (Ubuntu)**
+* Windows paths appear as:
+
+  ```bash
+  /mnt/c/Users/<you>/Desktop/Github/mini-data-platform
+  ```
+
+#### 2. Python version mismatch
+
+* Use **Python 3.11** (required by Airflow/dbt)
+* Verify:
+
+  ```bash
+  python3 --version
+  ```
+
+#### 3. `duckdb` command not found
+
+* DuckDB CLI is optional but helpful
+* Install:
+
+  ```bash
+  sudo snap install duckdb
+  ```
+
+#### 4. SQL commands must run *inside DuckDB*
+
+Wrong:
+
+```bash
+SELECT * FROM marts.fct_orders;
+```
+
+Correct:
+
+```bash
+duckdb warehouse/data.duckdb
+D SHOW TABLES;
+D SELECT COUNT(*) FROM marts.fct_orders;
+```
+
+#### 5. Evidence shows “no sources found”
+
+* You must generate sources first:
+
+  ```bash
+  cd evidence
+  npm run sources
+  npm run dev
+  ```
+
+---
+
+### How Airflow is used here
+
+* DAGs live in `airflow/dags/`
+* Each DAG represents **one pipeline** (products, users, transactions, dbt, etc.)
+* During setup:
+
+  * DAGs are executed with `airflow dags test`
+  * This validates logic without running a scheduler
+
+If you want **real scheduling** later:
+
+```bash
+airflow scheduler
+airflow webserver
+```
+
+---
+
+### What is already complete
+
+✅ Synthetic data generation
+✅ Airflow ingestion DAGs
+✅ DuckDB warehouse
+✅ dbt staging + marts models
+✅ Data validation tests
+✅ CLI agent schema discovery
+
+---
+
+### Optional next steps (learning‑focused)
+
+* Explore data:
+
+  ```sql
+  SELECT * FROM marts.fct_orders LIMIT 10;
+  ```
+
+* Modify a dbt model (`dbt_project/models/marts/`)
+
+* Add a new DAG (e.g. incremental load)
+
+* Add a metric/dashboard in Evidence
+
+---
+
+### Mental model summary
+
+```
+CSV sources
+   ↓
+Airflow DAGs (orchestration)
+   ↓
+DuckDB (warehouse)
+   ↓
+dbt (transformations)
+   ↓
+Evidence (analytics)
+```
+
+This setup is **correct, complete, and working as intended**.
+
+## 🧭 How This Project Works (Short Version)
+
+### TL;DR
+
+```
+Raw CSV → Airflow DAG → DuckDB → dbt → Evidence
+```
+
+### Key Things to Know
+
+* **Airflow = workflow DSL, not a daemon**
+
+  * DAGs define *what to run*
+  * This repo runs DAGs via `airflow dags test` (one-off, no scheduler)
+
+* **DuckDB is embedded**
+
+  * No server
+  * SQL must run *inside* `duckdb data.duckdb`, not bash
+
+* **Evidence needs data first**
+
+  * Run `npm run sources` before `npm run dev`
+
+### Common Gotchas (real issues hit)
+
+* SQL like `SHOW SCHEMAS;` must be run inside DuckDB
+* Evidence error `no sources found` = data/dbt not generated yet
+* WSL users must run everything from Linux shell (`/mnt/c/...` paths)
+* Python version mismatch can break setup (use Python 3.11)
+
+### Status
+
+✅ Ingestion, transforms, marts, and dashboards are complete.
