@@ -20,6 +20,7 @@ airflow/*.log
 
 # DuckDB - WAL files only (keep the main database)
 warehouse/*.duckdb.wal
+warehouse/*.duckdb
 
 # IDE
 .vscode/
