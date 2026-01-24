@@ -1,3 +1,57 @@
+# Mini Data Platform – CLI Agent
+
+## Overview
+
+This repository adds a small, SQL-first **Python CLI agent** on top of the existing Mini Data Platform. The CLI is designed for **ad-hoc analytical questions** directly against the DuckDB warehouse, without introducing additional abstraction layers or LLM dependencies.
+
+The implementation focuses on inferring data semantics from schemas and exposing analysis through a transparent, debuggable interface.
+
+---
+
+## CLI Usage
+
+```bash
+# Revenue over a time range
+python -m cli.main sales-cmd --start YYYY-MM-DD --end YYYY-MM-DD
+
+# Top-selling products (line-item grain)
+python -m cli.main top-products-cmd --n 5
+
+# Frequently co-purchased product pairs
+python -m cli.main product-pairs-cmd --top 10
+```
+
+Supported analyses:
+
+* Revenue / sales over time
+* Top product performance (line-item quantities)
+* Market-basket style product pair analysis
+
+---
+
+## Design Notes
+
+* **DuckDB** as the analytical warehouse
+* **SQL-first queries** for clarity and correctness
+* **Explicit grain handling** (order-level vs line-item-level)
+* Clean separation between query logic, database access, and CLI interface
+
+For local validation, a minimal seeded dataset was used to sanity-check query logic. The production warehouse is assumed to be built via the existing Airflow/dbt pipeline in this repository.
+
+---
+
+## Future Extensions
+
+* Natural-language → query routing
+* Time-series anomaly detection
+* Customer lifetime value (LTV) analysis
+* dbt metadata–aware querying
+
+---
+
+> The sections below retain the original repository README for full context on the data pipeline and dashboards.
+
+
 # Mini Data Platform
 
 If you have an applied AI interview at Astronomer, we'll ask you to build a small project around this repo. You can also proactively do this as part of your application to speed up the process.
