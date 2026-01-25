@@ -1,6 +1,6 @@
 from cli.db import get_conn
 
-# NOTE: Everything should query from curated marts layer.
+# Everything should query from curated marts layer.
 # Available marts tables: dim_customers, dim_products, fct_orders (as your test output shows).
 
 def sales(start: str, end: str):
@@ -15,7 +15,6 @@ def sales(start: str, end: str):
         WHERE transaction_date BETWEEN '{start}' AND '{end}'
     """
     return con.execute(query).fetchdf()
-
 
 def top_products(n: int):
     """
