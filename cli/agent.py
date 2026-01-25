@@ -242,31 +242,31 @@ class DataAgent:
     def _provide_help(self) -> str:
         """Provide help information"""
         return """
-🤖 I can help you with these types of questions:
+            🤖 I can help you with these types of questions:
 
-💰 Sales & Revenue:
-  • "How much in sales did we do last quarter?"
-  • "What's our revenue this year?"
-  • "Sales last month?"
+            💰 Sales & Revenue:
+            • "How much in sales did we do last quarter?"
+            • "What's our revenue this year?"
+            • "Sales last month?"
 
-📦 Products:
-  • "What are our top 10 products?"
-  • "Which products are most popular?"
-  • "Show me the best 5 items"
+            📦 Products:
+            • "What are our top 10 products?"
+            • "Which products are most popular?"
+            • "Show me the best 5 items"
 
-👤 Customer Analytics:
-  • "What's our average customer lifetime value?"
-  • "Customer metrics"
+            👤 Customer Analytics:
+            • "What's our average customer lifetime value?"
+            • "Customer metrics"
 
-🔗 Product Combinations:
-  • "Which two products are most frequently bought together?"
-  • "Product pairs"
+            🔗 Product Combinations:
+            • "Which two products are most frequently bought together?"
+            • "Product pairs"
 
-🔍 Anomaly Detection:
-  • "Are there any anomalies with how we sell products?"
-  • "Show me unusual sales patterns"
+            🔍 Anomaly Detection:
+            • "Are there any anomalies with how we sell products?"
+            • "Show me unusual sales patterns"
 
-💡 Try asking a question!
+            💡 Try asking a question!
         """
 
     def get_schema_summary(self) -> str:
