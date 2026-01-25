@@ -32,3 +32,17 @@ def top_products(n: int):
         LIMIT {n}
     """
     return con.execute(query).fetchdf()
+
+def product_pairs(top: int):
+    """
+    Product pair (basket) analysis usually requires order_items-level granularity.
+    This repo's marts layer does not expose an order_items table, so we can't compute true pairs reliably.
+    We'll return an empty DataFrame-like result via a query that returns no rows.
+    (Alternatively: raise a clear exception.)
+    """
+    con = get_conn()
+    query = """
+        SELECT NULL AS product_a, NULL AS product_b, NULL AS pair_count
+        WHERE 1 = 0
+    """
+    return con.execute(query).fetchdf()

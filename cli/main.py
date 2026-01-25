@@ -1,5 +1,6 @@
 import typer
-from cli.queries import sales, top_products, product_pairs
+from cli.queries import sales, top_products
+from cli.agent import DataAgent
 
 app = typer.Typer()
 
@@ -29,6 +30,17 @@ def top_products_cmd(
     except Exception as e:
         print(f"❌ Error: {e}")
 
+@app.command()
+def schema():
+    """Show database schema information"""
+    try:
+        agent = DataAgent()
+        print(agent.get_schema_summary())
+    except Exception as e:
+        print(f"❌ Error: {e}")
+
+if __name__ == "__main__":
+    app()
 
 
 
