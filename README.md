@@ -184,191 +184,212 @@ cd evidence
 npm run build
 ```
 
-## Local Setup Notes (WSL + Airflow + DuckDB)
+# CLI Analytics Agent
 
-### What this project does (1‑minute overview)
+This repository extends the reference mini data platform with a **production‑minded CLI** for answering ad‑hoc analytics questions on **curated marts data**.
 
-This repo is a **local, reproducible data platform demo**:
+The emphasis is on **deterministic queries**, **schema awareness**, and **explicit handling of unsupported questions** — not free‑form SQL or LLM‑generated logic.
 
-1. **Generate synthetic source data** (CSV files)
-2. **Ingest data with Airflow DAGs** into DuckDB
-3. **Transform data with dbt** (staging → marts)
-4. **Query analytics tables** (`marts.fct_orders`)
-5. **Visualize results with Evidence**
-
-There are **no external services** (no Postgres, no Snowflake, no cloud). Everything runs locally.
+The goal of this agent **is not to maximize coverage**, but to **provide a predictable**, **auditable analytics interface that behaves safely under ambiguity**.
 
 ---
 
-### Important concepts (before debugging)
-
-* **Airflow = workflow DSL, not a daemon**
-
-  * DAGs describe *what should happen*
-  * They do **not** automatically run unless scheduled or triggered
-  * `./setup.sh` uses `airflow dags test` → runs DAGs **once** for validation
-
-* **DuckDB = embedded warehouse**
-
-  * Data is stored in `warehouse/data.duckdb`
-  * No server, no credentials
-
-* **dbt = transformations only**
-
-  * Reads from DuckDB
-  * Builds `staging` views and `marts` tables
-
----
-
-### Common setup gotchas (based on real issues)
-
-#### 1. WSL vs Windows confusion
-
-* Commands must run **inside WSL (Ubuntu)**
-* Windows paths appear as:
-
-  ```bash
-  /mnt/c/Users/<you>/Desktop/Github/mini-data-platform
-  ```
-
-#### 2. Python version mismatch
-
-* Use **Python 3.11** (required by Airflow/dbt)
-* Verify:
-
-  ```bash
-  python3 --version
-  ```
-
-#### 3. `duckdb` command not found
-
-* DuckDB CLI is optional but helpful
-* Install:
-
-  ```bash
-  sudo snap install duckdb
-  ```
-
-#### 4. SQL commands must run *inside DuckDB*
-
-Wrong:
+### Example usage
 
 ```bash
-SELECT * FROM marts.fct_orders;
+# Validate warehouse connectivity and marts availability
+python -m cli.main test
 ```
-
-Correct:
 
 ```bash
-duckdb warehouse/data.duckdb
-D SHOW TABLES;
-D SELECT COUNT(*) FROM marts.fct_orders;
+# Compute total sales revenue
+python -m cli.main sales-cmd --start 2024-01-01 --end 2024-12-31
 ```
-
-#### 5. Evidence shows “no sources found”
-
-* You must generate sources first:
-
-  ```bash
-  cd evidence
-  npm run sources
-  npm run dev
-  ```
-
----
-
-### How Airflow is used here
-
-* DAGs live in `airflow/dags/`
-* Each DAG represents **one pipeline** (products, users, transactions, dbt, etc.)
-* During setup:
-
-  * DAGs are executed with `airflow dags test`
-  * This validates logic without running a scheduler
-
-If you want **real scheduling** later:
 
 ```bash
-airflow scheduler
-airflow webserver
+# List top-N products by units sold
+python -m cli.main top-products-cmd --n 5
 ```
 
+```bash
+# Discover marts schema metadata
+python -m cli.main schema
+```
+
+```bash
+# Ask a supported natural-language question (rule-based routing)
+python -m cli.main ask "How much in sales did we do last quarter?"
+```
+
+#### Data availability & guardrails
+
+The CLI agent validates **data availability before executing any query**. All analytics are bounded by the minimum and maximum `transaction_date` present in `marts.fct_orders`.
+
+If a requested period falls outside this range, the agent **explicitly rejects the request** instead of returning misleading results (e.g. zero revenue).
+
+Example:
+
+```bash
+python -m cli.main ask "How much in sales did we do last quarter?"
+```
+
+```
+❌ Requested period 2025-10-28 → 2026-01-26 is outside available data range (2020-01-20 → 2024-12-31)
+```
+
+This mirrors production analytics systems, where silent failures are more dangerous than hard errors.
+
 ---
 
-### What is already complete
+### What this CLI does
 
-✅ Synthetic data generation
-✅ Airflow ingestion DAGs
-✅ DuckDB warehouse
-✅ dbt staging + marts models
-✅ Data validation tests
-✅ CLI agent schema discovery
+The CLI provides a safe analytics interface on top of the existing warehouse:
 
----
-
-### Optional next steps (learning‑focused)
-
-* Explore data:
-
-  ```sql
-  SELECT * FROM marts.fct_orders LIMIT 10;
-  ```
-
-* Modify a dbt model (`dbt_project/models/marts/`)
-
-* Add a new DAG (e.g. incremental load)
-
-* Add a metric/dashboard in Evidence
+* Answers common business questions using **explicit query handlers**
+* Restricts access to **marts tables only**
+* Infers behavior from **schema metadata**, not hard‑coded assumptions
 
 ---
 
-### Mental model summary
+### Supported analytics
+
+Currently supported, deterministic primitives:
+
+* **Sales revenue** over a specified date range
+* **Top‑N products** by units sold
+* **Schema discovery** for marts tables and columns
+
+Each capability maps to a single, auditable query.
+
+---
+
+### Design principles
+
+* **Deterministic** – one question → one known query
+* **Schema‑aware** – inspects warehouse metadata
+* **Marts‑only** – avoids raw or intermediate data
+* **Defensive** – unsupported requests are rejected explicitly
+* **Explicit rejection over guessing** – when business semantics or required data are missing, the agent explains *why* a question cannot be answered instead of producing heuristic or fabricated results
+
+---
+
+### Intentional limitations
+
+Some prompt examples are intentionally not supported yet:
+
+* **Product pair analysis** – requires order‑item level granularity
+* **Customer lifetime value** – requires an agreed business definition
+* **Anomaly detection** – requires baselines and alerting semantics
+
+Rather than guessing, the CLI surfaces these limitations clearly.
+
+---
+
+### Pitfalls encountered (and lessons learned)
+
+* **Python `date` vs `datetime` mismatches**
+  DuckDB may return `datetime` objects even for date columns. All date bounds are normalized to `datetime.date` before validation to avoid subtle comparison bugs.
+
+* **WSL vs Windows context**
+  All commands must be run inside the Linux (WSL) environment. Paths such as `/mnt/c/...` indicate Windows-mounted directories, but tooling like Airflow, DuckDB, and dbt must execute from the Linux shell.
+
+---
+
+### Future extensions
+
+If given more time, the system would evolve in this order:
+
+1. Expand deterministic analytics primitives (e.g. CLV with a clear definition)
+2. Add lightweight, explainable anomaly detection
+3. Introduce an LLM **only at the intent interpretation layer**, using schema context and existing handlers
+4. Optionally expose the same analytics interface via Evidence or a web UI
+
+
+# Appendix: Local Data Platform Setup (Reference)
+
+This appendix provides **context only** for the underlying local data platform used by the CLI agent. It is **not required** to understand the CLI design, but explains where the data comes from and how the marts are produced.
+
+---
+
+### Platform components
+
+The reference mini data platform consists of four layers:
+
+1. **Synthetic data generation**
+   CSV files are generated locally to simulate source systems (users, products, transactions).
+
+2. **Airflow (orchestration)**
+   Airflow DAGs ingest CSV sources into DuckDB and run dbt transformations. In this repo, DAGs are executed via `airflow dags test` for reproducibility rather than a long-running scheduler.
+
+3. **DuckDB (warehouse)**
+   DuckDB acts as an embedded analytical warehouse. All data lives in a single file:
+
+   ```text
+   warehouse/data.duckdb
+   ```
+
+   There is no server process, credentials, or network dependency.
+
+4. **dbt (transformations)**
+   dbt models transform raw and staging tables into curated marts (`marts.*`), which are the **only tables queried by the CLI agent**.
+
+---
+
+### Why the CLI queries marts only
+
+The CLI is intentionally restricted to marts tables because they:
+
+* Represent validated, business-facing datasets
+* Have stable schemas and agreed semantics
+* Are safe for ad-hoc analytics without leaking raw data
+
+This mirrors how production analytics systems typically expose data to downstream consumers.
+
+---
+
+### Relationship to Evidence
+
+Evidence is included in the reference platform as an example presentation layer. While the CLI does not depend on Evidence, both layers query the **same marts tables**, ensuring consistent metrics across interfaces.
+
+If extended, the CLI’s analytics primitives could be exposed directly through Evidence without duplicating business logic.
+
+---
+
+### Pipeline summary
 
 ```
 CSV sources
    ↓
-Airflow DAGs (orchestration)
+Airflow DAGs (ingestion + dbt)
    ↓
-DuckDB (warehouse)
+DuckDB warehouse
    ↓
-dbt (transformations)
+Curated marts (marts.*)
    ↓
-Evidence (analytics)
+CLI analytics agent / Evidence
 ```
 
-This setup is **correct, complete, and working as intended**.
+This setup is intentionally local, reproducible, and dependency-light, making it suitable for demonstrations, experimentation, and deterministic analytics tooling.
 
-## 🧭 How This Project Works (Short Version)
+---
 
-### TL;DR
+### Pitfalls encountered (and lessons learned)
 
-```
-Raw CSV → Airflow DAG → DuckDB → dbt → Evidence
-```
+The following issues were encountered while working with the reference platform and are documented here to save future time:
 
-### Key Things to Know
+* **WSL vs Windows context**
+  All commands must be run inside the Linux (WSL) environment. Paths such as `/mnt/c/...` indicate Windows-mounted directories, but tooling like Airflow, DuckDB, and dbt must execute from the Linux shell.
 
-* **Airflow = workflow DSL, not a daemon**
+* **Python environment isolation (PEP 668)**
+  System Python on recent Linux distributions may block `pip install` by default. Creating and activating a dedicated virtual environment (`python3.11 -m venv .venv`) is required to install dependencies cleanly.
 
-  * DAGs define *what to run*
-  * This repo runs DAGs via `airflow dags test` (one-off, no scheduler)
+* **DuckDB SQL context**
+  SQL commands such as `SHOW SCHEMAS;` or `SELECT * FROM marts.fct_orders;` must be executed *inside* the DuckDB CLI or through a DuckDB connection, not directly in the shell.
 
-* **DuckDB is embedded**
+* **Airflow execution model**
+  Airflow DAGs describe workflows but do not run automatically. This repo uses `airflow dags test` to execute pipelines once for validation, which avoids running a scheduler while still exercising the full DAG logic.
 
-  * No server
-  * SQL must run *inside* `duckdb data.duckdb`, not bash
+* **Evidence data availability**
+  Evidence dashboards will report `no sources found` until dbt models have been built and `npm run sources` has been executed. This is expected behavior, not a misconfiguration.
 
-* **Evidence needs data first**
-
-  * Run `npm run sources` before `npm run dev`
-
-### Common Gotchas (real issues hit)
-
-* SQL like `SHOW SCHEMAS;` must be run inside DuckDB
-* Evidence error `no sources found` = data/dbt not generated yet
-* WSL users must run everything from Linux shell (`/mnt/c/...` paths)
-* Python version mismatch can break setup (use Python 3.11)
-
-### Status
-
-✅ Ingestion, transforms, marts, and dashboards are complete.
+Documenting these constraints helped clarify the operational boundaries of the platform and informed the CLI’s defensive, schema-aware design.
