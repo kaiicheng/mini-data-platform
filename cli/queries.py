@@ -45,3 +45,10 @@ def product_pairs(top: int):
         WHERE 1 = 0
     """
     return con.execute(query).fetchdf()
+
+def customer_count():
+    con = get_conn()
+    return con.execute("""
+        SELECT COUNT(*) AS cnt
+        FROM marts.dim_customers
+    """).fetchdf()

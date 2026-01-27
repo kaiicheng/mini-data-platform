@@ -221,6 +221,11 @@ python -m cli.main schema
 python -m cli.main ask "How much in sales did we do last quarter?"
 ```
 
+```bash
+# Ask about customer metrics inferred from marts metadata
+python -m cli.main ask "How many customers do we have?"
+```
+
 #### Data availability & guardrails
 
 The CLI agent validates **data availability before executing any query**. All analytics are bounded by the minimum and maximum `transaction_date` present in `marts.fct_orders`.
@@ -295,15 +300,28 @@ Rather than guessing, the CLI surfaces these limitations clearly.
 
 ---
 
-### Future extensions
+### Future extensions (design notes)
 
-If given more time, the system would evolve in this order:
+The current implementation intentionally limits scope to deterministic, auditable analytics.
+If given more time, the system could be extended in the following directions:
 
-1. Expand deterministic analytics primitives (e.g. CLV with a clear definition)
-2. Add lightweight, explainable anomaly detection
-3. Introduce an LLM **only at the intent interpretation layer**, using schema context and existing handlers
-4. Optionally expose the same analytics interface via Evidence or a web UI
+1. **Richer intent routing**
+   Expand rule-based NLP into a lightweight intent registry or pattern matcher, while keeping SQL generation deterministic.
 
+2. **Explicit time range parsing**
+   Parse expressions like "last quarter" or "in 2023" into validated date ranges, instead of relying on a fixed default window.
+
+3. **Additional analytics primitives**
+   Add new deterministic query handlers (e.g. customer metrics, CLV with a defined formula) without coupling NLP logic to SQL.
+
+4. **Explainable anomaly detection**
+   Introduce simple, interpretable baselines (e.g. rolling averages) before attempting any automated alerting.
+
+5. **LLM-assisted intent interpretation**
+   Use an LLM only to classify intent and extract parameters, never to generate SQL directly.
+
+6. **Alternative interfaces**
+   Expose the same analytics primitives via a web API or BI layer (e.g. Evidence) without duplicating business logic.
 
 # Appendix: Local Data Platform Setup (Reference)
 

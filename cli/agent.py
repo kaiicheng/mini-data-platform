@@ -1,7 +1,7 @@
 # cli/agent.py
 
 from cli.db import get_conn
-from cli.queries import sales, top_products
+from cli.queries import sales, top_products, customer_count
 from datetime import date, timedelta
 
 
@@ -39,6 +39,8 @@ class DataAgent:
     def _discover_schema(self) -> dict:
         """Inspect marts tables and columns from information_schema."""
         con = get_conn()
+
+        # table_schema = 'marts' for semantic layer access contrl
         rows = con.execute("""
             SELECT table_name, column_name
             FROM information_schema.columns
@@ -70,7 +72,6 @@ class DataAgent:
         return "\n".join(lines)
 
     # Question routing
-
     def process_question(self, question: str) -> str:
         """
         Route a natural-language question to a supported analytics primitive.
@@ -91,6 +92,9 @@ class DataAgent:
                     f"{i}. Product {r['product_id']}: {r['units_sold']:,} units"
                 )
             return "\n".join(lines)
+
+        if "customer" in q and "how many" in q:
+            return self._handle_customer_count()
 
         # unsupported intents
         if "pair" in q:
@@ -129,3 +133,7 @@ class DataAgent:
             f"💰 Sales revenue from {start} to {end}: "
             f"${revenue:,.2f}"
         )
+
+    def _handle_customer_count(self) -> str:
+        df = customer_count()
+        return f"👥 Total customers: {df.iloc[0]['cnt']:,}"
