@@ -79,6 +79,10 @@ class DataAgent:
         """
         q = question.lower()
 
+        
+        if "data" in q and ("range" in q or "available" in q):
+            return self._handle_data_range()
+
         # sales / revenue
         if "sales" in q or "revenue" in q:
             return self._handle_sales_question(q)
@@ -137,3 +141,9 @@ class DataAgent:
     def _handle_customer_count(self) -> str:
         df = customer_count()
         return f"👥 Total customers: {df.iloc[0]['cnt']:,}"
+
+    def _handle_data_range(self) -> str:
+        return (
+            f"📅 Available data range: "
+            f"{self.min_date} → {self.max_date}"
+        )

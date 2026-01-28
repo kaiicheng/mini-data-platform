@@ -47,6 +47,9 @@ def product_pairs(top: int):
     return con.execute(query).fetchdf()
 
 def customer_count():
+    """
+    Count orders between start and end date.
+    """
     con = get_conn()
     return con.execute("""
         SELECT COUNT(*) AS cnt
