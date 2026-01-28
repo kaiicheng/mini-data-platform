@@ -55,3 +55,20 @@ def customer_count():
         SELECT COUNT(*) AS cnt
         FROM marts.dim_customers
     """).fetchdf()
+
+def top_customers(limit: int = 10):
+    """
+    List users ordered by number of orders (descending).
+    """
+    con = get_conn()
+    query = f"""
+        SELECT
+            o.user_id,
+            COUNT(*) AS order_count
+        FROM marts.fct_orders o
+        GROUP BY o.user_id
+        ORDER BY order_count DESC
+        LIMIT {limit}
+    """
+    return con.execute(query).fetchdf()
+

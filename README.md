@@ -226,6 +226,16 @@ python -m cli.main ask "How much in sales did we do last quarter?"
 python -m cli.main ask "How many customers do we have?"
 ```
 
+```bash
+# Inspect warehouse data availability (min/max transaction_date)
+python -m cli.main ask "What is the available data range?"
+```
+
+```bash
+# List users with the most orders (deterministic, schema-driven)
+python -m cli.main ask "Which customers have the most orders?"
+```
+
 #### Data availability & guardrails
 
 The CLI agent validates **data availability before executing any query**. All analytics are bounded by the minimum and maximum `transaction_date` present in `marts.fct_orders`.

@@ -1,7 +1,7 @@
 # cli/agent.py
 
 from cli.db import get_conn
-from cli.queries import sales, top_products, customer_count
+from cli.queries import sales, top_products, customer_count, top_customers
 from datetime import date, timedelta
 
 
@@ -79,7 +79,11 @@ class DataAgent:
         """
         q = question.lower()
 
-        
+
+        if "customer" in q and ("top" in q or "most" in q):
+            return self._handle_top_customers()
+
+        # date range / data availability
         if "data" in q and ("range" in q or "available" in q):
             return self._handle_data_range()
 
@@ -147,3 +151,12 @@ class DataAgent:
             f"📅 Available data range: "
             f"{self.min_date} → {self.max_date}"
         )
+
+    def _handle_top_customers(self) -> str:
+        df = top_customers(10)
+        lines = ["👥 Top customers by order count:"]
+        for i, (_, r) in enumerate(df.iterrows(), 1):
+            lines.append(
+                f"{i}. User {r['user_id']}: {r['order_count']:,} orders"
+            )
+        return "\n".join(lines)
