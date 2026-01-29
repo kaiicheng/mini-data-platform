@@ -203,6 +203,7 @@ The CLI provides a safe analytics interface on top of the existing warehouse:
 * Restricts access to **marts tables only**
 * Infers behavior from **schema metadata**, not hard‑coded assumptions
 
+---
 
 ### Supported analytics
 
@@ -214,6 +215,7 @@ Currently supported, deterministic primitives:
 
 Each capability maps to a single, auditable query.
 
+---
 
 ### Design principles
 
