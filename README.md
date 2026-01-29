@@ -296,6 +296,7 @@ python -m cli.main ask "How much in sales did we do last quarter?"
 This mirrors production analytics systems, where silent failures are more dangerous than hard errors.
 
 ---
+
 ### Unsupported analytics (by design)
 
 Some analytics primitives are intentionally not supported due to schema limitations.
@@ -303,6 +304,38 @@ Some analytics primitives are intentionally not supported due to schema limitati
 For example, product pair (basket) analysis requires order-item level data.
 Since the marts layer only exposes order-level facts, the agent explicitly rejects such queries
 instead of producing misleading results.
+
+---
+
+### Optional LLM integration (design notes)
+
+The architecture is LLM-ready while keeping execution deterministic.
+- LLMs may classify intent and extract parameters
+- SQL execution remains template-based and auditable
+- Existing guardrails enforce correctness and safety
+
+Principle: LLMs interpret; the system executes.
+
+---
+
+### Future extensions (design notes)
+
+The current implementation deliberately focuses on deterministic, auditable analytics.
+Future extensions would preserve this core while expanding interpretability and governance:
+
+1. **Hybrid intent interpretation**  
+   Allow optional model-assisted intent classification and parameter extraction,
+   while keeping routing and execution fully deterministic.
+
+2. **Exploratory retrieval as a separate path**  
+   Introduce retrieval-based reasoning only for exploratory or unstructured questions,
+   while structured analytics continue to rely on deterministic SQL for correctness
+   and debuggability.
+
+3. **Governed data quality and auditability**  
+   Treat data quality as a first-class concern through policy-driven checks and
+   structured audit logs, enabling traceable and context-aware analytics aligned
+   with continuous QC research (e.g. arXiv:2512.05559).
 
 # Appendix I
 
@@ -325,31 +358,6 @@ Rather than guessing, the CLI surfaces these limitations clearly.
 
 * **WSL vs Windows context**
   All commands must be run inside the Linux (WSL) environment. Paths such as `/mnt/c/...` indicate Windows-mounted directories, but tooling like Airflow, DuckDB, and dbt must execute from the Linux shell.
-
----
-
-### Future extensions (design notes)
-
-The current implementation intentionally limits scope to deterministic, auditable analytics.
-If given more time, the system could be extended in the following directions:
-
-1. **Richer intent routing**
-   Expand rule-based NLP into a lightweight intent registry or pattern matcher, while keeping SQL generation deterministic.
-
-2. **Explicit time range parsing**
-   Parse expressions like "last quarter" or "in 2023" into validated date ranges, instead of relying on a fixed default window.
-
-3. **Additional analytics primitives**
-   Add new deterministic query handlers (e.g. customer metrics, CLV with a defined formula) without coupling NLP logic to SQL.
-
-4. **Explainable anomaly detection**
-   Introduce simple, interpretable baselines (e.g. rolling averages) before attempting any automated alerting.
-
-5. **LLM-assisted intent interpretation**
-   Use an LLM only to classify intent and extract parameters, never to generate SQL directly.
-
-6. **Alternative interfaces**
-   Expose the same analytics primitives via a web API or BI layer (e.g. Evidence) without duplicating business logic.
 
 ---
 
