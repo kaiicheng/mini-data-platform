@@ -337,7 +337,9 @@ Future extensions would preserve this core while expanding interpretability and 
    structured audit logs, enabling traceable and context-aware analytics aligned
    with continuous QC research (e.g. arXiv:2512.05559).
 
-# Appendix I
+<details>
+<summary><strong>Appendix I: Design notes & limitations</strong></summary>
+
 
 ### Intentional limitations
 
@@ -415,8 +417,10 @@ Evidence is included in the reference platform as an example presentation layer.
 
 If extended, the CLI’s analytics primitives could be exposed directly through Evidence without duplicating business logic.
 
+</details>
 
-# Appendix II: Local Data Platform Setup (Reference)
+<details>
+<summary><strong>Appendix II: Local Data Platform Setup (Reference)</strong></summary>
 
 This appendix provides **context only** for the underlying local data platform used by the CLI agent. It is **not required** to understand the CLI design, but explains where the data comes from and how the marts are produced.
 
@@ -442,3 +446,5 @@ The following issues were encountered while working with the reference platform 
   Evidence dashboards will report `no sources found` until dbt models have been built and `npm run sources` has been executed. This is expected behavior, not a misconfiguration.
 
 Documenting these constraints helped clarify the operational boundaries of the platform and informed the CLI’s defensive, schema-aware design.
+
+</details>
