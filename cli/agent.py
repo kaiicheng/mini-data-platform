@@ -15,6 +15,27 @@ class DataAgent:
     - Explicitly reject unsupported questions
     """
 
+    INTENTS = [
+        {
+            "name": "top_customers",
+            "keywords": ["top", "most"],
+            "entities": ["customer", "user"],
+            "handler": "_handle_top_customers",
+        },
+        {
+            "name": "sales",
+            "keywords": ["sales", "revenue"],
+            "entities": [],
+            "handler": "_handle_sales_question",
+        },
+        {
+            "name": "customer_count",
+            "keywords": ["how many", "count"],
+            "entities": ["customer"],
+            "handler": "_handle_customer_count",
+        },
+    ]
+
     def __init__(self):
         self._schema = self._discover_schema()
         self._init_data_bounds() 
@@ -71,6 +92,22 @@ class DataAgent:
                 lines.append(f"  - {c}")
         return "\n".join(lines)
 
+    def _score_intent(self, intent: dict, question: str) -> int:
+        """
+        Compute a simple relevance score between a question and an intent.
+        """
+        score = 0
+
+        for kw in intent["keywords"]:
+            if kw in question:
+                score += 2
+
+        for ent in intent["entities"]:
+            if ent in question:
+                score += 1
+
+        return score
+
     # Question routing
     def process_question(self, question: str) -> str:
         """
@@ -79,30 +116,48 @@ class DataAgent:
         """
         q = question.lower()
 
-
-        if "customer" in q and ("top" in q or "most" in q):
-            return self._handle_top_customers()
-
-        # date range / data availability
         if "data" in q and ("range" in q or "available" in q):
             return self._handle_data_range()
 
-        # sales / revenue
-        if "sales" in q or "revenue" in q:
-            return self._handle_sales_question(q)
+        best_intent = None
+        best_score = 0
 
-        # top products
-        if "top" in q and "product" in q:
-            df = top_products(5)
-            lines = ["📦 Top products:"]
-            for i, (_, r) in enumerate(df.iterrows(), 1):
-                lines.append(
-                    f"{i}. Product {r['product_id']}: {r['units_sold']:,} units"
-                )
-            return "\n".join(lines)
+        for intent in self.INTENTS:
+            score = self._score_intent(intent, q)
+            if score > best_score:
+                best_intent = intent
+                best_score = score
 
-        if "customer" in q and "how many" in q:
-            return self._handle_customer_count()
+        if best_intent and best_score > 0:
+            handler = getattr(self, best_intent["handler"])
+            try:
+                return handler(q)
+            except TypeError:
+                return handler()
+
+        # if "customer" in q and ("top" in q or "most" in q):
+        #     return self._handle_top_customers()
+
+        # # date range / data availability
+        # if "data" in q and ("range" in q or "available" in q):
+        #     return self._handle_data_range()
+
+        # # sales / revenue
+        # if "sales" in q or "revenue" in q:
+        #     return self._handle_sales_question(q)
+
+        # # top products
+        # if "top" in q and "product" in q:
+        #     df = top_products(5)
+        #     lines = ["📦 Top products:"]
+        #     for i, (_, r) in enumerate(df.iterrows(), 1):
+        #         lines.append(
+        #             f"{i}. Product {r['product_id']}: {r['units_sold']:,} units"
+        #         )
+        #     return "\n".join(lines)
+
+        # if "customer" in q and "how many" in q:
+        #     return self._handle_customer_count()
 
         # unsupported intents
         if "pair" in q:
