@@ -191,6 +191,10 @@ This repository extends the reference mini data platform with a **production‑m
 
 The CLI is intentionally **deterministic**, **schema‑aware**, and **defensive by design**. Rather than free‑form SQL or LLM‑generated logic, it maps natural‑language questions to a small set of explicit, auditable analytics capabilities.
 
+
+<details>
+<summary><strong>Design Details</strong></summary>
+
 ### What this CLI does
 
 The CLI provides a safe analytics interface on top of the existing warehouse:
@@ -219,47 +223,6 @@ Each capability maps to a single, auditable query.
 * **Defensive** – unsupported requests are rejected explicitly
 * **Explicit rejection over guessing** – when business semantics or required data are missing, the agent explains *why* a question cannot be answered instead of producing heuristic or fabricated results
 
-### Example usage
-
-```bash
-# Validate warehouse connectivity and marts availability
-python -m cli.main test
-```
-
-```bash
-# Compute total sales revenue
-python -m cli.main sales-cmd --start 2024-01-01 --end 2024-12-31
-```
-
-```bash
-# List top-N products by units sold
-python -m cli.main top-products-cmd --n 5
-```
-
-```bash
-# Discover marts schema metadata
-python -m cli.main schema
-```
-
-```bash
-# Ask a supported natural-language question (rule-based routing)
-python -m cli.main ask "How much in sales did we do last quarter?"
-```
-
-```bash
-# Ask about customer metrics inferred from marts metadata
-python -m cli.main ask "How many customers do we have?"
-```
-
-```bash
-# Inspect warehouse data availability (min/max transaction_date)
-python -m cli.main ask "What is the available data range?"
-```
-
-```bash
-# List users with the most orders (deterministic, schema-driven)
-python -m cli.main ask "Which customers have the most orders?"
-```
 
 ---
 
@@ -315,6 +278,52 @@ The architecture is LLM-ready while keeping execution deterministic.
 - Existing guardrails enforce correctness and safety
 
 Principle: LLMs interpret; the system executes.
+
+---
+
+</details>
+
+### Example usage
+
+```bash
+# Validate warehouse connectivity and marts availability
+python -m cli.main test
+```
+
+```bash
+# Compute total sales revenue
+python -m cli.main sales-cmd --start 2024-01-01 --end 2024-12-31
+```
+
+```bash
+# List top-N products by units sold
+python -m cli.main top-products-cmd --n 5
+```
+
+```bash
+# Discover marts schema metadata
+python -m cli.main schema
+```
+
+```bash
+# Ask a supported natural-language question (rule-based routing)
+python -m cli.main ask "How much in sales did we do last quarter?"
+```
+
+```bash
+# Ask about customer metrics inferred from marts metadata
+python -m cli.main ask "How many customers do we have?"
+```
+
+```bash
+# Inspect warehouse data availability (min/max transaction_date)
+python -m cli.main ask "What is the available data range?"
+```
+
+```bash
+# List users with the most orders (deterministic, schema-driven)
+python -m cli.main ask "Which customers have the most orders?"
+```
 
 ---
 
