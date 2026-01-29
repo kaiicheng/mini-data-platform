@@ -184,15 +184,40 @@ cd evidence
 npm run build
 ```
 
+
 # CLI Analytics Agent
 
 This repository extends the reference mini data platform with a **production‑minded CLI** for answering ad‑hoc analytics questions on **curated marts data**.
 
-The emphasis is on **deterministic queries**, **schema awareness**, and **explicit handling of unsupported questions** — not free‑form SQL or LLM‑generated logic.
+The CLI is intentionally **deterministic**, **schema‑aware**, and **defensive by design**. Rather than free‑form SQL or LLM‑generated logic, it maps natural‑language questions to a small set of explicit, auditable analytics capabilities.
 
-The goal of this agent **is not to maximize coverage**, but to **provide a predictable**, **auditable analytics interface that behaves safely under ambiguity**.
+### What this CLI does
 
----
+The CLI provides a safe analytics interface on top of the existing warehouse:
+
+* Answers common business questions using **explicit query handlers**
+* Restricts access to **marts tables only**
+* Infers behavior from **schema metadata**, not hard‑coded assumptions
+
+
+### Supported analytics
+
+Currently supported, deterministic primitives:
+
+* **Sales revenue** over a specified date range
+* **Top‑N products** by units sold
+* **Schema discovery** for marts tables and columns
+
+Each capability maps to a single, auditable query.
+
+
+### Design principles
+
+* **Deterministic** – one question → one known query
+* **Schema‑aware** – inspects warehouse metadata
+* **Marts‑only** – avoids raw or intermediate data
+* **Defensive** – unsupported requests are rejected explicitly
+* **Explicit rejection over guessing** – when business semantics or required data are missing, the agent explains *why* a question cannot be answered instead of producing heuristic or fabricated results
 
 ### Example usage
 
@@ -236,11 +261,27 @@ python -m cli.main ask "What is the available data range?"
 python -m cli.main ask "Which customers have the most orders?"
 ```
 
-#### Data availability & guardrails
+---
 
-The CLI agent validates **data availability before executing any query**. All analytics are bounded by the minimum and maximum `transaction_date` present in `marts.fct_orders`.
+### Intent routing & scoring
 
-If a requested period falls outside this range, the agent **explicitly rejects the request** instead of returning misleading results (e.g. zero revenue).
+The CLI uses a lightweight, deterministic **intent scoring system** to route
+natural-language questions to explicit analytics capabilities.
+
+Each supported capability defines:
+- intent keywords (e.g. *sales*, *most*)
+- relevant entities (e.g. *customer*, *user*)
+- a single, auditable query handler
+
+Incoming questions are scored against these capabilities, and the highest-scoring
+match is executed. This avoids brittle keyword if-else logic while remaining
+fully deterministic and debuggable.
+
+---
+
+### Data availability & guardrails
+
+The CLI agent validates **data availability before executing any query**. All analytics are bounded by the minimum and maximum `transaction_date` present in `marts.fct_orders`. If a requested period falls outside this range, the agent **explicitly rejects the request** instead of returning misleading results (e.g. zero revenue).
 
 Example:
 
@@ -255,38 +296,15 @@ python -m cli.main ask "How much in sales did we do last quarter?"
 This mirrors production analytics systems, where silent failures are more dangerous than hard errors.
 
 ---
+### Unsupported analytics (by design)
 
-### What this CLI does
+Some analytics primitives are intentionally not supported due to schema limitations.
 
-The CLI provides a safe analytics interface on top of the existing warehouse:
+For example, product pair (basket) analysis requires order-item level data.
+Since the marts layer only exposes order-level facts, the agent explicitly rejects such queries
+instead of producing misleading results.
 
-* Answers common business questions using **explicit query handlers**
-* Restricts access to **marts tables only**
-* Infers behavior from **schema metadata**, not hard‑coded assumptions
-
----
-
-### Supported analytics
-
-Currently supported, deterministic primitives:
-
-* **Sales revenue** over a specified date range
-* **Top‑N products** by units sold
-* **Schema discovery** for marts tables and columns
-
-Each capability maps to a single, auditable query.
-
----
-
-### Design principles
-
-* **Deterministic** – one question → one known query
-* **Schema‑aware** – inspects warehouse metadata
-* **Marts‑only** – avoids raw or intermediate data
-* **Defensive** – unsupported requests are rejected explicitly
-* **Explicit rejection over guessing** – when business semantics or required data are missing, the agent explains *why* a question cannot be answered instead of producing heuristic or fabricated results
-
----
+# Appendix I
 
 ### Intentional limitations
 
@@ -333,13 +351,21 @@ If given more time, the system could be extended in the following directions:
 6. **Alternative interfaces**
    Expose the same analytics primitives via a web API or BI layer (e.g. Evidence) without duplicating business logic.
 
-# Appendix: Local Data Platform Setup (Reference)
-
-This appendix provides **context only** for the underlying local data platform used by the CLI agent. It is **not required** to understand the CLI design, but explains where the data comes from and how the marts are produced.
-
 ---
 
 ### Platform components
+
+```
+CSV sources
+   ↓
+Airflow DAGs (ingestion + dbt)
+   ↓
+DuckDB warehouse
+   ↓
+Curated marts (marts.*)
+   ↓
+CLI analytics agent / Evidence
+```
 
 The reference mini data platform consists of four layers:
 
@@ -381,25 +407,12 @@ Evidence is included in the reference platform as an example presentation layer.
 
 If extended, the CLI’s analytics primitives could be exposed directly through Evidence without duplicating business logic.
 
----
 
-### Pipeline summary
+# Appendix II: Local Data Platform Setup (Reference)
 
-```
-CSV sources
-   ↓
-Airflow DAGs (ingestion + dbt)
-   ↓
-DuckDB warehouse
-   ↓
-Curated marts (marts.*)
-   ↓
-CLI analytics agent / Evidence
-```
+This appendix provides **context only** for the underlying local data platform used by the CLI agent. It is **not required** to understand the CLI design, but explains where the data comes from and how the marts are produced.
 
 This setup is intentionally local, reproducible, and dependency-light, making it suitable for demonstrations, experimentation, and deterministic analytics tooling.
-
----
 
 ### Pitfalls encountered (and lessons learned)
 
